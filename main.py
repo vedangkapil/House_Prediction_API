@@ -1,6 +1,8 @@
+import io
 import joblib
 import pandas as pd 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -66,3 +68,16 @@ def predict(House: HouseFeatures):
             status_code=500,
             detail= f'prediction failed: {str(e)}'
         )
+
+@app.post('/predict-file')
+async def predict_file(file: UploadFile=File(...)):
+
+    if not file.filename.endswith('csv'):
+        raise HTTPException(
+            status_code=400,
+            detail= 'please upload  CSV file only'
+        )
+
+    contents = await file.read()
+    df = pd.DataFrame(io.BytesIO(contents))
+
